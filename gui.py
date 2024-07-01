@@ -1,4 +1,4 @@
-from tkinter import Tk, Frame, Button, Label, Entry, Toplevel, messagebox, Scrollbar, Listbox, END, Canvas
+from tkinter import Tk, Frame, Button, Label, Entry, Toplevel, messagebox, Scrollbar, Listbox, END, RIGHT, X, Y, VERTICAL
 from PIL import Image, ImageTk
 import tkinter.font as tkFont
 import os
@@ -51,6 +51,12 @@ class MainMenu:
         self.quit_button = Button(self.master, text="Wyjdź", command=self.master.quit, **self.button_style)
         self.quit_button.pack(fill='x', padx=10, pady=(10, 40))
 
+        # Lista celów
+        self.goals = []  # Lista przechowująca cele w formacie (nazwa, liczba_dni, ukończone_dni, ukończony)
+
+        # Wczytanie zapisanych celów (jeśli istnieją)
+        self.load_goals()
+
     def show_goal_management_screen(self):
         # Zamknięcie głównego okna menu
         self.master.withdraw()
@@ -64,32 +70,51 @@ class MainMenu:
         content_frame = Frame(goal_window, background='#FFFFFF')
         content_frame.pack(fill='both', expand=True, padx=20, pady=20)
 
-        # Formularz dodawania celu
-        Label(content_frame, text="Dodaj nowy cel:", font=('Avenir', 18, 'bold'), background='#FFFFFF').grid(row=0, column=0, columnspan=3, pady=10)
+        # Ramka z przyciskami celów po lewej stronie
+        goals_frame = Frame(content_frame, background='#FFFFFF', width=300)
+        goals_frame.pack(side='left', fill='y', padx=(0, 10), pady=10)
 
-        Label(content_frame, text="Nazwa celu:", background='#FFFFFF').grid(row=1, column=0, sticky='w')
-        self.goal_name_entry = Entry(content_frame)
-        self.goal_name_entry.grid(row=1, column=1, padx=10, pady=10, columnspan=2)
+        Label(goals_frame, text="Twoje cele:", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
 
-        Label(content_frame, text="Liczba dni:", background='#FFFFFF').grid(row=2, column=0, sticky='w')
-        self.goal_days_entry = Entry(content_frame)
-        self.goal_days_entry.grid(row=2, column=1, padx=10, pady=10)
+        # Lista przewijana dla przycisków celów
+        self.goals_buttons = []
+        self.scrollbar = Scrollbar(goals_frame, orient=VERTICAL)
+        self.goal_listbox = Listbox(goals_frame, yscrollcommand=self.scrollbar.set, selectmode='single', background='#FFFFFF', exportselection=False)
 
-        add_button = Button(content_frame, text="Dodaj cel", command=self.add_goal, **self.button_style)
-        add_button.grid(row=3, columnspan=3, pady=10)
+        for i, goal in enumerate(self.goals, start=1):
+            self.goal_listbox.insert(END, f"Cel {i}: {goal[0]}")
+            self.goals_buttons.append(goal)
 
-        # Lista celów
-        self.goals_frame = Frame(content_frame, background='#FFFFFF')
-        self.goals_frame.grid(row=4, column=0, columnspan=3, pady=20)
+        self.goal_listbox.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+        self.scrollbar.pack(side=RIGHT, fill=Y)
+        self.scrollbar.config(command=self.goal_listbox.yview)
 
-        # Wczytanie zapisanych celów (jeśli istnieją)
-        self.goals = []  # Lista przechowująca cele w formacie (nazwa, liczba_dni, ukończone_dni)
-        self.load_goals()
-        self.update_goals_list()
+        self.goal_listbox.bind('<<ListboxSelect>>', self.on_goal_select)
+
+        # Linia oddzielająca
+        separator = Frame(content_frame, width=2, background='#1a3b4c')
+        separator.pack(side='left', fill='y', padx=10)
+
+        # Formularz dodawania celu po prawej stronie
+        self.add_goal_frame = Frame(content_frame, background='#FFFFFF')
+        self.add_goal_frame.pack(side='right', fill='both', expand=True)
+
+        Label(self.add_goal_frame, text="Dodaj nowy cel:", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
+
+        Label(self.add_goal_frame, text="Nazwa celu:", background='#FFFFFF').pack(anchor='w', padx=10)
+        self.goal_name_entry = Entry(self.add_goal_frame)
+        self.goal_name_entry.pack(fill='x', padx=10, pady=(0, 10))
+
+        Label(self.add_goal_frame, text="Liczba dni:", background='#FFFFFF').pack(anchor='w', padx=10)
+        self.goal_days_entry = Entry(self.add_goal_frame)
+        self.goal_days_entry.pack(fill='x', padx=10, pady=(0, 10))
+
+        add_button = Button(self.add_goal_frame, text="Dodaj cel", command=self.add_goal, **self.button_style)
+        add_button.pack(fill='x', padx=10, pady=(10, 20))
 
         # Przycisk "Powrót do menu głównego"
         back_button = Button(content_frame, text="Powrót do menu głównego", command=lambda: self.show_main_menu_and_close_window(goal_window), **self.button_style)
-        back_button.grid(row=5, column=0, columnspan=3, pady=20)
+        back_button.pack(side='bottom', fill='x', padx=10, pady=(20, 10))
 
     def add_goal(self):
         # Dodawanie celu na podstawie danych z formularza
@@ -98,7 +123,7 @@ class MainMenu:
 
         if goal_name and goal_days.isdigit():
             goal_days = int(goal_days)
-            self.goals.append((goal_name, goal_days, []))
+            self.goals.append((goal_name, goal_days, [], False))
             self.update_goals_list()
             self.save_goals()
             messagebox.showinfo("Dodano cel", f"Dodano nowy cel: {goal_name} na {goal_days} dni.")
@@ -108,135 +133,91 @@ class MainMenu:
             messagebox.showwarning("Błąd", "Proszę wprowadzić poprawną nazwę celu i liczbę dni.")
 
     def update_goals_list(self):
-        # Aktualizacja listy celów na ekranie zarządzania celami
-        for widget in self.goals_frame.winfo_children():
-            widget.destroy()
+        # Aktualizacja listy przycisków celów po lewej stronie
+        self.goal_listbox.delete(0, END)
+        for i, goal in enumerate(self.goals, start=1):
+            status = "(Wykonane)" if goal[3] else ""
+            self.goal_listbox.insert(END, f"Cel {i}: {goal[0]} {status}")
 
-        for i, (goal_name, goal_days, completed_days) in enumerate(self.goals, start=1):
-            goal_frame = Frame(self.goals_frame, background='#FFFFFF')
-            goal_frame.pack(fill='x', padx=10, pady=5)
+    def on_goal_select(self, event):
+        # Obsługa zdarzenia wyboru celu z listy
+        selected_idx = self.goal_listbox.curselection()
+        if selected_idx:
+            idx = selected_idx[0]
+            self.toggle_goal_details(idx)
 
-            days_left = goal_days - len(completed_days)
-            Label(goal_frame, text=f"Cel {i}: {goal_name} na {goal_days} dni (Pozostało: {days_left} dni)", background='#FFFFFF').grid(row=0, column=0, sticky='w')
+    def toggle_goal_details(self, idx):
+        # Rozsuwanie/zwijanie szczegółów celu
+        if hasattr(self, 'goal_details_frame'):
+            self.goal_details_frame.destroy()
 
-            # Scrollbar i lista dni
-            days_frame = Frame(goal_frame, background='#FFFFFF')
-            days_frame.grid(row=1, column=0, columnspan=3, pady=10)
+        goal_name, goal_days, completed_days, completed = self.goals[idx]
 
-            scrollbar = Scrollbar(days_frame, orient="vertical")
-            scrollbar.pack(side='right', fill='y')
+        self.goal_details_frame = Frame(self.add_goal_frame, background='#FFFFFF')
+        self.goal_details_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
-            goal_days_listbox = Listbox(days_frame, width=20, height=10, selectmode='multiple', background='#FFFFFF', yscrollcommand=scrollbar.set)
-            goal_days_listbox.pack(side='left', fill='both', expand=True)
+        Label(self.goal_details_frame, text=f"Detale celu '{goal_name}':", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
 
-            for j in range(1, goal_days + 1):
-                goal_days_listbox.insert(END, f"Dzień {j}")
-                if j in completed_days:
-                    goal_days_listbox.itemconfig(j-1, {'bg':'green'})
+        goal_days_listbox = Listbox(self.goal_details_frame, selectmode='multiple', background='#FFFFFF')
+        goal_days_listbox.pack(fill='both', expand=True, padx=10, pady=(0, 10))
 
-            goal_days_listbox.bind('<<ListboxSelect>>', lambda event, idx=i-1, listbox=goal_days_listbox: self.mark_completed_days(idx, listbox))
-
-            scrollbar.config(command=goal_days_listbox.yview)
-
-            # Przyciski edycji i usuwania
-            edit_button = Button(goal_frame, text="Edytuj", command=lambda idx=i-1: self.edit_goal(idx), **{**self.button_style, 'padx': 5, 'pady': 2})
-            edit_button.grid(row=2, column=1, padx=5)
-
-            delete_button = Button(goal_frame, text="Usuń", command=lambda idx=i-1: self.delete_goal(idx), **{**self.button_style, 'padx': 5, 'pady': 2})
-            delete_button.grid(row=2, column=2, padx=5)
-
-    def mark_completed_days(self, idx, listbox):
-        # Odznaczanie wykonanych zadań dla danego celu
-        selected_indices = listbox.curselection()
-        completed_days = self.goals[idx][2]
-
-        for index in selected_indices:
-            day = index + 1
-            if day not in completed_days:
-                completed_days.append(day)
-                listbox.itemconfig(index, {'bg':'green'})
+        for day in range(1, goal_days + 1):
+            if day in completed_days:
+                goal_days_listbox.insert(END, f"Dzień {day} (ukończony)")
+                goal_days_listbox.itemconfig(END, {'fg': 'green'})
             else:
-                completed_days.remove(day)
-                listbox.itemconfig(index, {'bg':'white'})
+                goal_days_listbox.insert(END, f"Dzień {day}")
 
-        self.goals[idx] = (self.goals[idx][0], self.goals[idx][1], completed_days)
-        self.save_goals()
-        self.update_goals_list()
+        toggle_completed_button = Button(self.goal_details_frame, text="Oznacz jako ukończone", command=lambda: self.mark_goal_completed(idx), **self.button_style)
+        toggle_completed_button.pack(fill='x', padx=10, pady=(10, 20))
 
-    def edit_goal(self, idx):
-        # Okno edycji celu na podstawie jego indeksu
-        edit_window = Toplevel(self.master)
-        edit_window.title("Edytuj cel")
-        edit_window.geometry("300x150")
-
-        content_frame = Frame(edit_window, background='#FFFFFF')
-        content_frame.pack(fill='both', expand=True, padx=20, pady=20)
-
-        goal_name_label = Label(content_frame, text="Nowa nazwa celu:", background='#FFFFFF')
-        goal_name_label.grid(row=0, column=0, padx=10, pady=10)
-
-        goal_name_entry = Entry(content_frame)
-        goal_name_entry.insert(0, self.goals[idx][0])
-        goal_name_entry.grid(row=0, column=1, padx=10, pady=10)
-
-        goal_days_label = Label(content_frame, text="Nowa liczba dni:", background='#FFFFFF')
-        goal_days_label.grid(row=1, column=0, padx=10, pady=10)
-
-        goal_days_entry = Entry(content_frame)
-        goal_days_entry.insert(0, self.goals[idx][1])
-        goal_days_entry.grid(row=1, column=1, padx=10, pady=10)
-
-        save_button = Button(content_frame, text="Zapisz zmiany", command=lambda: self.save_edited_goal(idx, goal_name_entry.get(), goal_days_entry.get(), edit_window), **self.button_style)
-        save_button.grid(row=2, columnspan=2, pady=10)
-
-    def save_edited_goal(self, idx, new_goal_name, new_goal_days, window):
-        # Zapisanie edytowanego celu na podstawie indeksu w liście celów
-        if new_goal_name and new_goal_days.isdigit():
-            self.goals[idx] = (new_goal_name, int(new_goal_days), self.goals[idx][2])
+    def mark_goal_completed(self, idx):
+        # Oznaczanie celu jako ukończony
+        goal_name, goal_days, completed_days, completed = self.goals[idx]
+        if not completed:
+            self.goals[idx] = (goal_name, goal_days, list(range(1, goal_days + 1)), True)
             self.update_goals_list()
             self.save_goals()
-            messagebox.showinfo("Zapisano zmiany", "Zapisano zmiany w celu.")
-            window.destroy()
+            messagebox.showinfo("Cel ukończony", f"Cel '{goal_name}' został oznaczony jako ukończony.")
         else:
-            messagebox.showwarning("Błąd", "Proszę wprowadzić poprawną nazwę celu i liczbę dni.")
-
-    def delete_goal(self, idx):
-        # Usunięcie celu na podstawie indeksu w liście celów
-        del self.goals[idx]
-        self.update_goals_list()
-        self.save_goals()
-        messagebox.showinfo("Usunięto cel", "Usunięto wybrany cel.")
+            messagebox.showwarning("Błąd", "Ten cel został już wcześniej oznaczony jako ukończony.")
 
     def save_goals(self):
-        # Zapisanie listy celów do pliku tekstowego
-        with open("goals_save.txt", "w") as f:
-            for goal_name, goal_days, completed_days in self.goals:
+        # Zapisywanie celów do pliku goals.txt
+        with open("goals.txt", "w") as file:
+            for goal in self.goals:
+                goal_name, goal_days, completed_days, completed = goal
+                completed_str = 'True' if completed else 'False'
                 completed_days_str = ','.join(map(str, completed_days))
-                f.write(f"{goal_name},{goal_days},{completed_days_str}\n")
+                file.write(f"{goal_name},{goal_days},{completed_days_str},{completed_str}\n")
 
     def load_goals(self):
-        # Wczytanie listy celów z pliku tekstowego (jeśli istnieje)
-        if os.path.exists("goals_save.txt"):
-            with open("goals_save.txt", "r") as f:
-                for line in f:
-                    goal_name, goal_days, *completed_days = line.strip().split(',')
-                    self.goals.append((goal_name, int(goal_days), list(map(int, completed_days))))
+        # Wczytywanie celów z pliku goals.txt
+        if os.path.exists("goals.txt"):
+            with open("goals.txt", "r") as file:
+                for line in file:
+                    data = line.strip().split(',')
+                    if len(data) == 4:
+                        goal_name = data[0]
+                        goal_days = int(data[1])
+                        completed_days = list(map(int, data[2].split(',')))
+                        completed = True if data[3] == 'True' else False
+                        self.goals.append((goal_name, goal_days, completed_days, completed))
+                    else:
+                        print(f"Ignorowanie nieprawidłowej linii w pliku: {line}")
 
     def show_main_menu_and_close_window(self, window):
-        # Powrót do głównego menu i zamknięcie okna podrzędnego
+        # Powrót do menu głównego i zamknięcie bieżącego okna
         window.destroy()
         self.master.deiconify()
 
     def show_help_content(self):
-        messagebox.showinfo("Pomoc", "Lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+        messagebox.showinfo("Pomoc", "Aplikacja do zarządzania celami. Dodawaj nowe cele i śledź ich postęp.")
 
     def show_author_content(self):
-        messagebox.showinfo("Autor", "Autor: Krystian Harasymek")
+        messagebox.showinfo("Autor", "Aplikacja stworzona przez [Twoje imię/nazwisko].")
 
-def main():
+if __name__ == "__main__":
     root = Tk()
     app = MainMenu(root)
     root.mainloop()
-
-if __name__ == "__main__":
-    main()
