@@ -133,8 +133,16 @@ class MainMenu:
         # Aktualizacja listy przycisków celów po lewej stronie
         self.goal_listbox.delete(0, END)
         for i, goal in enumerate(self.goals, start=1):
-            status = "(Wykonane)" if goal[3] else ""
-            self.goal_listbox.insert(END, f"Cel {i}: {goal[0]} {status}")
+            if goal[3]:  # Sprawdź czy cel został ukończony
+                status = "(Wykonane)"
+        else:
+            remaining_days = goal[1] - len(goal[2])  # Oblicz pozostałe dni do odznaczenia
+            if remaining_days > 0:
+                status = f"({remaining_days} dni do ukończenia)"
+            else:
+                status = "(Wykonane)"
+
+        self.goal_listbox.insert(END, f"Cel {i}: {goal[0]} {status}")
 
     def on_goal_select(self, event):
         # Obsługa zdarzenia wyboru celu z listy
@@ -153,7 +161,7 @@ class MainMenu:
         self.goal_details_frame = Frame(self.add_goal_frame, background='#FFFFFF')
         self.goal_details_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
-        Label(self.goal_details_frame, text=f"Detale celu '{goal_name}':", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
+        Label(self.goal_details_frame, text=f"Informacje o celu: {goal_name}", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
 
         goal_days_listbox = Listbox(self.goal_details_frame, selectmode='multiple', background='#FFFFFF')
         goal_days_listbox.pack(fill='both', expand=True, padx=10, pady=(0, 10))
@@ -165,19 +173,87 @@ class MainMenu:
             else:
                 goal_days_listbox.insert(END, f"Dzień {day}")
 
-        toggle_completed_button = Button(self.goal_details_frame, text="Oznacz jako ukończone", command=lambda: self.mark_goal_completed(idx), **self.button_style)
-        toggle_completed_button.pack(fill='x', padx=10, pady=(10, 20))
+        # Przycisk "Oznacz dzień jako ukończony"
+        oznacz_dzien_button = Button(self.goal_details_frame, text="Ukończ dzień", command=lambda: self.oznacz_dzien_ukonczony(idx, goal_days_listbox.curselection()), **self.button_style)
+        oznacz_dzien_button.pack(side='left', fill='x', padx=5, pady=(10, 20))
 
-    def mark_goal_completed(self, idx):
-        # Oznaczanie celu jako ukończony
+        # Przycisk "Edytuj cel"
+        edytuj_cel_button = Button(self.goal_details_frame, text="Edytuj cel", command=lambda: self.edit_goal(idx), **self.button_style)
+        edytuj_cel_button.pack(side='left', fill='x', padx=5, pady=(10, 20))
+
+        # Przycisk "Usuń cel"
+        usun_cel_button = Button(self.goal_details_frame, text="Usuń cel", command=lambda: self.delete_goal(idx), **self.button_style)
+        usun_cel_button.pack(side='left', fill='x', padx=5, pady=(10, 20))
+
+    def oznacz_dzien_ukonczony(self, goal_idx, selected_days):
+        # Oznaczanie wybranego dnia jako ukończonego
+        if not selected_days:
+            messagebox.showwarning("Błąd", "Proszę wybrać co najmniej jeden dzień do oznaczenia jako ukończony.")
+            return
+
+        goal_name, goal_days, completed_days, completed = self.goals[goal_idx]
+        for day_idx in selected_days:
+            day = day_idx + 1
+            if day not in completed_days:
+                completed_days.append(day)
+
+        self.goals[goal_idx] = (goal_name, goal_days, completed_days, completed)
+        self.toggle_goal_details(goal_idx)
+        self.update_goals_list()
+        self.save_goals()
+
+        if len(completed_days) == goal_days:
+            self.goals[goal_idx] = (goal_name, goal_days, completed_days, True)
+            messagebox.showinfo("Cel ukończony", f"Cel '{goal_name}' został oznaczony jako ukończony.")
+
+    def edit_goal(self, idx):
+        # Edytowanie danych celu
         goal_name, goal_days, completed_days, completed = self.goals[idx]
-        if not completed:
-            self.goals[idx] = (goal_name, goal_days, list(range(1, goal_days + 1)), True)
+
+        self.edit_goal_window = Toplevel(self.master)
+        self.edit_goal_window.title("Edytuj cel")
+        self.edit_goal_window.geometry("400x300")
+
+        Label(self.edit_goal_window, text="Edytuj cel:", font=('Avenir', 18, 'bold')).pack(pady=10)
+
+        Label(self.edit_goal_window, text="Nazwa celu:").pack(anchor='w', padx=10)
+        self.edit_goal_name_entry = Entry(self.edit_goal_window)
+        self.edit_goal_name_entry.pack(fill='x', padx=10, pady=(0, 10))
+        self.edit_goal_name_entry.insert(0, goal_name)
+
+        Label(self.edit_goal_window, text="Liczba dni:").pack(anchor='w', padx=10)
+        self.edit_goal_days_entry = Entry(self.edit_goal_window)
+        self.edit_goal_days_entry.pack(fill='x', padx=10, pady=(0, 10))
+        self.edit_goal_days_entry.insert(0, goal_days)
+
+        save_button = Button(self.edit_goal_window, text="Zapisz zmiany", command=lambda: self.save_edited_goal(idx), **self.button_style)
+        save_button.pack(fill='x', padx=10, pady=(10, 20))
+
+    def save_edited_goal(self, idx):
+        # Zapisywanie edytowanych danych celu
+        new_name = self.edit_goal_name_entry.get()
+        new_days = self.edit_goal_days_entry.get()
+
+        if new_name and new_days.isdigit():
+            new_days = int(new_days)
+            _, _, completed_days, completed = self.goals[idx]
+            self.goals[idx] = (new_name, new_days, completed_days, completed)
             self.update_goals_list()
             self.save_goals()
-            messagebox.showinfo("Cel ukończony", f"Cel '{goal_name}' został oznaczony jako ukończony.")
+            messagebox.showinfo("Zapisano", f"Zapisano zmiany dla celu: {new_name}.")
+            self.edit_goal_window.destroy()
         else:
-            messagebox.showwarning("Błąd", "Ten cel został już wcześniej oznaczony jako ukończony.")
+            messagebox.showwarning("Błąd", "Proszę wprowadzić poprawną nazwę celu i liczbę dni.")
+
+    def delete_goal(self, idx):
+        # Usuwanie celu
+        goal_name, _, _, _ = self.goals[idx]
+        confirm = messagebox.askyesno("Usuń cel", f"Czy na pewno chcesz usunąć cel: {goal_name}?")
+        if confirm:
+            del self.goals[idx]
+            self.update_goals_list()
+            self.save_goals()
+            messagebox.showinfo("Usunięto", f"Cel '{goal_name}' został usunięty.")
 
     def save_goals(self):
         # Zapisywanie celów do pliku goals.txt
