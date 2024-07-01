@@ -1,4 +1,4 @@
-from tkinter import Tk, Frame, Button, Label, Entry, Toplevel, messagebox, Scrollbar, Listbox, END, RIGHT, X, Y, VERTICAL
+from tkinter import Tk, Frame, Button, Label, Entry, Toplevel, messagebox, Listbox, END, RIGHT, X, Y, VERTICAL
 from PIL import Image, ImageTk
 import tkinter.font as tkFont
 import os
@@ -78,16 +78,13 @@ class MainMenu:
 
         # Lista przewijana dla przycisków celów
         self.goals_buttons = []
-        self.scrollbar = Scrollbar(goals_frame, orient=VERTICAL)
-        self.goal_listbox = Listbox(goals_frame, yscrollcommand=self.scrollbar.set, selectmode='single', background='#FFFFFF', exportselection=False)
+        self.goal_listbox = Listbox(goals_frame, selectmode='single', background='#FFFFFF', exportselection=False)
 
         for i, goal in enumerate(self.goals, start=1):
             self.goal_listbox.insert(END, f"Cel {i}: {goal[0]}")
             self.goals_buttons.append(goal)
 
         self.goal_listbox.pack(fill='both', expand=True, padx=10, pady=(0, 10))
-        self.scrollbar.pack(side=RIGHT, fill=Y)
-        self.scrollbar.config(command=self.goal_listbox.yview)
 
         self.goal_listbox.bind('<<ListboxSelect>>', self.on_goal_select)
 
@@ -113,7 +110,7 @@ class MainMenu:
         add_button.pack(fill='x', padx=10, pady=(10, 20))
 
         # Przycisk "Powrót do menu głównego"
-        back_button = Button(content_frame, text="Powrót do menu głównego", command=lambda: self.show_main_menu_and_close_window(goal_window), **self.button_style)
+        back_button = Button(goals_frame, text="Powrót do menu głównego", command=lambda: self.show_main_menu_and_close_window(goal_window), **self.button_style)
         back_button.pack(side='bottom', fill='x', padx=10, pady=(20, 10))
 
     def add_goal(self):
