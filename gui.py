@@ -1,7 +1,9 @@
-from tkinter import Tk, Frame, Button, Label, Entry, Toplevel, messagebox, Listbox, END, RIGHT, X, Y, VERTICAL
+from tkinter import Tk, Frame, Button, Label, Entry, Toplevel, messagebox, END
+from tkinter import Listbox
 from PIL import Image, ImageTk
 import tkinter.font as tkFont
 import os
+
 
 class MainMenu:
     def __init__(self, master):
@@ -114,18 +116,19 @@ class MainMenu:
         back_button.pack(side='bottom', fill='x', padx=10, pady=(20, 10))
 
     def add_goal(self):
-        # Dodawanie celu na podstawie danych z formularza
         goal_name = self.goal_name_entry.get()
         goal_days = self.goal_days_entry.get()
 
         if goal_name and goal_days.isdigit():
             goal_days = int(goal_days)
             self.goals.append((goal_name, goal_days, [], False))
-            self.update_goals_list()
             self.save_goals()
             messagebox.showinfo("Dodano cel", f"Dodano nowy cel: {goal_name} na {goal_days} dni.")
             self.goal_name_entry.delete(0, 'end')
             self.goal_days_entry.delete(0, 'end')
+            
+            # Aktualizacja listy celów w interfejsie użytkownika
+            self.update_goals_list()
         else:
             messagebox.showwarning("Błąd", "Proszę wprowadzić poprawną nazwę celu i liczbę dni.")
 
@@ -253,31 +256,52 @@ class MainMenu:
             del self.goals[idx]
             self.update_goals_list()
             self.save_goals()
+            self.goal_details_frame.destroy()
             messagebox.showinfo("Usunięto", f"Cel '{goal_name}' został usunięty.")
 
-    def save_goals(self):
-        # Zapisywanie celów do pliku goals.txt
-        with open("goals.txt", "w") as file:
-            for goal in self.goals:
-                goal_name, goal_days, completed_days, completed = goal
-                completed_str = 'True' if completed else 'False'
-                completed_days_str = ','.join(map(str, completed_days))
-                file.write(f"{goal_name},{goal_days},{completed_days_str},{completed_str}\n")
-
     def load_goals(self):
-        # Wczytywanie celów z pliku goals.txt
         if os.path.exists("goals.txt"):
-            with open("goals.txt", "r") as file:
-                for line in file:
-                    data = line.strip().split(',')
-                    if len(data) == 4:
-                        goal_name = data[0]
-                        goal_days = int(data[1])
-                        completed_days = list(map(int, data[2].split(',')))
-                        completed = True if data[3] == 'True' else False
-                        self.goals.append((goal_name, goal_days, completed_days, completed))
-                    else:
-                        print(f"Ignorowanie nieprawidłowej linii w pliku: {line}")
+            try:
+                with open("goals.txt", "r") as file:
+                    for line in file:
+                        data = line.strip().split('|')
+                        if len(data) == 4:
+                            goal_name = data[0]
+                            try:
+                                goal_days = int(data[1])
+                            except ValueError:
+                                print(f"Ignorowanie nieprawidłowej linii w pliku (błędna liczba dni): {line}")
+                                continue
+
+                            completed_days_str = data[2]
+                            if completed_days_str:
+                                try:
+                                    completed_days = list(map(int, completed_days_str.split(',')))
+                                except ValueError:
+                                    print(f"Ignorowanie nieprawidłowej linii w pliku (błędne dni ukończone): {line}")
+                                    continue
+                            else:
+                                completed_days = []
+
+                            completed = data[3].strip().lower() == 'true'
+                            self.goals.append((goal_name, goal_days, completed_days, completed))
+                        else:
+                            print(f"Ignorowanie nieprawidłowej linii w pliku (nieprawidłowa liczba pól): {line}")
+                # Po wczytaniu celów, aktualizujemy listę w interfejsie użytkownika
+                self.update_goals_list()
+            except Exception as e:
+                print(f"Wystąpił błąd podczas wczytywania danych z pliku goals.txt: {e}")
+
+    def save_goals(self):
+        try:
+            with open("goals.txt", "w") as file:
+                for goal in self.goals:
+                    goal_name, goal_days, completed_days, completed = goal
+                    completed_days_str = ",".join(map(str, completed_days))
+                    file.write(f"{goal_name}|{goal_days}|{completed_days_str}|{completed}\n")
+        except Exception as e:
+            messagebox.showerror("Błąd", f"Nie udało się zapisać celów: {e}")
+
 
     def show_main_menu_and_close_window(self, window):
         # Powrót do menu głównego i zamknięcie bieżącego okna
@@ -289,6 +313,7 @@ class MainMenu:
 
     def show_author_content(self):
         messagebox.showinfo("Autor", "Aplikacja stworzona przez [Twoje imię/nazwisko].")
+
 
 if __name__ == "__main__":
     root = Tk()
