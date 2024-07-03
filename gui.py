@@ -1,8 +1,8 @@
-import json
-import os
-from tkinter import Tk, Frame, Label, Entry, Toplevel, messagebox, END, Listbox, MULTIPLE, Button
+from tkinter import Tk, Frame, Label, Entry, Toplevel, messagebox, END, Listbox, Button
 from PIL import Image, ImageTk
 import tkinter.font as tkFont
+import json
+import os
 
 class DepthButton(Button):
     def __init__(self, parent=None, **kwargs):
@@ -51,7 +51,7 @@ class MainMenu:
         app_name_font = tkFont.Font(family="Avenir", size=50, weight="bold")
         self.app_name_label = Label(self.master, text="Celebr", font=app_name_font, background='#FFFFFF', fg='#1a3b4c')
         self.app_name_label.pack()
-        
+
         # Styl dla przycisków menu
         self.button_style = {
             'font': ('Avenir', 14),
@@ -69,13 +69,11 @@ class MainMenu:
         self.start_button = DepthButton(self.master, text="Rozpocznij", command=self.show_goal_management_screen, **self.button_style)
         self.start_button.pack(fill='x', padx=10, pady=10)
 
-        # Przyciski menu
-        self.help_button = DepthButton(self.master, text="Pomoc", command=self.show_help_content, **self.button_style)
-        self.help_button.pack(fill='x', padx=10, pady=10)
-
+        # Przycisk "Autor"
         self.author_button = DepthButton(self.master, text="Autor", command=self.show_author_content, **self.button_style)
         self.author_button.pack(fill='x', padx=10, pady=10)
 
+        # Przycisk "Wyjdź"
         self.quit_button = DepthButton(self.master, text="Wyjdź", command=self.master.quit, **self.button_style)
         self.quit_button.pack(fill='x', padx=10, pady=(10, 40))
 
@@ -106,7 +104,7 @@ class MainMenu:
 
         # Lista przewijana dla przycisków celów
         self.goal_listbox = Listbox(goals_frame, selectmode='single', background='#FFFFFF', exportselection=False)
-        self.goal_listbox.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+        self.goal_listbox.pack(fill='both', expand=True, padx=10, pady=(0,10))
 
         self.goal_listbox.bind('<<ListboxSelect>>', self.on_goal_select)
 
@@ -195,7 +193,7 @@ class MainMenu:
 
         Label(self.goal_details_frame, text=f"Informacje o celu: {goal_name}", font=('Avenir', 18, 'bold'), background='#FFFFFF', fg='#1a3b4c').pack(pady=10)
 
-        self.goal_days_listbox = Listbox(self.goal_details_frame, selectmode=MULTIPLE, background='#FFFFFF')
+        self.goal_days_listbox = Listbox(self.goal_details_frame, selectmode='multiple', background='#FFFFFF')
         self.goal_days_listbox.pack(fill='both', expand=True, padx=10, pady=10)
 
         # Aktualizacja listy dni ukończonych
@@ -299,11 +297,17 @@ class MainMenu:
         window.destroy()
         self.master.deiconify()
 
-    def show_help_content(self):
-        messagebox.showinfo("Pomoc", "To jest ekran pomocy. Brak konkretnych informacji.")
-
     def show_author_content(self):
-        messagebox.showinfo("Autor", "Autor: Twoje imię i nazwisko. Kontakt: Twój adres e-mail.")
+        # Okno informacyjne dla ekranu Autor
+        author_window = Toplevel(self.master)
+        author_window.title("Autor")
+        author_window.geometry("400x300")
+
+        Label(author_window, text="Autor: Krystian Harasymek.\nKontakt: dsw54152@student.dsw.edu.pl", padx=20, pady=20).pack()
+
+        # Przycisk "Powrót do menu głównego"
+        back_button = DepthButton(author_window, text="Powrót do menu", command=author_window.destroy, **self.button_style)
+        back_button.pack(fill='x', padx=10, pady=(20, 10))
 
 if __name__ == "__main__":
     root = Tk()
