@@ -1,39 +1,24 @@
 [
     {
-        "name": "xdd",
+        "name": "Si\u0142ownia",
         "days": 12,
         "completed_days": [
-            5,
-            7,
-            1,
             3,
-            8,
-            11,
-            9,
-            10,
-            12,
-            4,
-            6,
-            2
+            2,
+            1
         ],
-        "completed": true
+        "completed": false
     },
     {
-        "name": "xd",
-        "days": 12,
+        "name": "Matematyka",
+        "days": 6,
         "completed_days": [
+            1,
             2,
+            3,
             4,
             6,
-            8,
-            10,
-            12,
-            5,
-            11,
-            9,
-            7,
-            1,
-            3
+            5
         ],
         "completed": true
     }
