@@ -1,14 +1,41 @@
 import json
 import os
-from tkinter import Tk, Frame, Button, Label, Entry, Toplevel, messagebox, END, Listbox, Scrollbar, MULTIPLE
+from tkinter import Tk, Frame, Label, Entry, Toplevel, messagebox, END, Listbox, MULTIPLE, Button
 from PIL import Image, ImageTk
 import tkinter.font as tkFont
+
+class DepthButton(Button):
+    def __init__(self, parent=None, **kwargs):
+        super().__init__(parent, **kwargs)
+        self.default_bg = self["background"]
+        self.bind("<Enter>", self.on_enter)
+        self.bind("<Leave>", self.on_leave)
+        self.bind("<ButtonPress-1>", self.on_press)
+        self.bind("<ButtonRelease-1>", self.on_release)
+
+    def on_enter(self, event):
+        self["relief"] = "raised"
+        self["background"] = "#2c5d6b"
+
+    def on_leave(self, event):
+        self["relief"] = "flat"
+        self["background"] = self.default_bg
+
+    def on_press(self, event):
+        self["relief"] = "sunken"
+        self["background"] = "#1a3b4c"
+
+    def on_release(self, event):
+        self["relief"] = "raised"
+        self["background"] = "#2c5d6b"
+        if self["command"]:
+            self["command"]()
 
 class MainMenu:
     def __init__(self, master):
         self.master = master
         self.master.title("Celebr")
-        self.master.geometry("800x600")
+        self.master.geometry("1000x800")
         self.master.configure(background='#FFFFFF')
 
         # Logo aplikacji
@@ -32,24 +59,24 @@ class MainMenu:
             'foreground': '#FFFFFF',
             'activebackground': '#2c5d6b',
             'activeforeground': '#FFFFFF',
-            'borderwidth': 0,
+            'borderwidth': 2,
             'highlightthickness': 0,
             'padx': 10,
             'pady': 5,
         }
 
         # Przycisk "Rozpocznij"
-        self.start_button = Button(self.master, text="Rozpocznij", command=self.show_goal_management_screen, **self.button_style)
+        self.start_button = DepthButton(self.master, text="Rozpocznij", command=self.show_goal_management_screen, **self.button_style)
         self.start_button.pack(fill='x', padx=10, pady=10)
 
         # Przyciski menu
-        self.help_button = Button(self.master, text="Pomoc", command=self.show_help_content, **self.button_style)
+        self.help_button = DepthButton(self.master, text="Pomoc", command=self.show_help_content, **self.button_style)
         self.help_button.pack(fill='x', padx=10, pady=10)
 
-        self.author_button = Button(self.master, text="Autor", command=self.show_author_content, **self.button_style)
+        self.author_button = DepthButton(self.master, text="Autor", command=self.show_author_content, **self.button_style)
         self.author_button.pack(fill='x', padx=10, pady=10)
 
-        self.quit_button = Button(self.master, text="Wyjdź", command=self.master.quit, **self.button_style)
+        self.quit_button = DepthButton(self.master, text="Wyjdź", command=self.master.quit, **self.button_style)
         self.quit_button.pack(fill='x', padx=10, pady=(10, 40))
 
         # Lista celów
@@ -65,7 +92,7 @@ class MainMenu:
         # Tworzenie nowego okna Toplevel dla zarządzania celami
         goal_window = Toplevel(self.master)
         goal_window.title("Zarządzanie celami")
-        goal_window.geometry("800x600")
+        goal_window.geometry("1000x800")
 
         # Ramka dla zawartości
         content_frame = Frame(goal_window, background='#FFFFFF')
@@ -91,24 +118,24 @@ class MainMenu:
         separator.pack(side='left', fill='y', padx=10)
 
         # Formularz dodawania celu po prawej stronie
-        self.add_goal_frame = Frame(content_frame, background='#FFFFFF')
-        self.add_goal_frame.pack(side='right', fill='both', expand=True)
+        self.add_goal_frame = Frame(content_frame, background='#FFFFFF', highlightbackground='#1a3b4c', highlightthickness=2, padx=10, pady=10)
+        self.add_goal_frame.pack(side='right', fill='both', expand=True, padx=20, pady=20)
 
         Label(self.add_goal_frame, text="Dodaj nowy cel:", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
 
         Label(self.add_goal_frame, text="Nazwa celu:", background='#FFFFFF').pack(anchor='w', padx=10)
-        self.goal_name_entry = Entry(self.add_goal_frame)
+        self.goal_name_entry = Entry(self.add_goal_frame, font=('Avenir', 12), relief="solid", bd=2)
         self.goal_name_entry.pack(fill='x', padx=10, pady=(0, 10))
 
         Label(self.add_goal_frame, text="Liczba dni:", background='#FFFFFF').pack(anchor='w', padx=10)
-        self.goal_days_entry = Entry(self.add_goal_frame)
+        self.goal_days_entry = Entry(self.add_goal_frame, font=('Avenir', 12), relief="solid", bd=2)
         self.goal_days_entry.pack(fill='x', padx=10, pady=(0, 10))
 
-        add_button = Button(self.add_goal_frame, text="Dodaj cel", command=self.add_goal, **self.button_style)
+        add_button = DepthButton(self.add_goal_frame, text="Dodaj cel", command=self.add_goal, **self.button_style)
         add_button.pack(fill='x', padx=10, pady=(10, 20))
 
         # Przycisk "Powrót do menu głównego"
-        back_button = Button(goals_frame, text="Powrót do menu głównego", command=lambda: self.show_main_menu_and_close_window(goal_window), **self.button_style)
+        back_button = DepthButton(goals_frame, text="Powrót do menu głównego", command=lambda: self.show_main_menu_and_close_window(goal_window), **self.button_style)
         back_button.pack(side='bottom', fill='x', padx=10, pady=(20, 10))
 
     def add_goal(self):
@@ -152,16 +179,12 @@ class MainMenu:
 
     def on_goal_select(self, event):
         # Obsługa zdarzenia wyboru celu z listy
-        selected_idx = self.goal_listbox.curselection()
-        if selected_idx:
-            idx = selected_idx[0]
-            self.toggle_goal_details(idx)
+        selected_indices = self.goal_listbox.curselection()
+        if selected_indices:
+            idx = selected_indices[0]
+            self.show_goal_details(idx)
 
-    def toggle_goal_details(self, idx):
-        # Rozsuwanie/zwijanie szczegółów celu
-        if hasattr(self, 'goal_details_frame'):
-            self.goal_details_frame.destroy()
-
+    def show_goal_details(self, idx):
         goal_name = self.goals[idx]['name']
         goal_days = self.goals[idx]['days']
         completed_days = self.goals[idx]['completed_days']
@@ -178,15 +201,15 @@ class MainMenu:
         self.update_goal_days_listbox(goal_days, completed_days)
 
         # Przycisk "Oznacz dzień ukończony"
-        oznacz_dzien_button = Button(self.goal_details_frame, text="Ukończ dzień", command=lambda: self.oznacz_dzien_ukonczony(idx), **self.button_style)
+        oznacz_dzien_button = DepthButton(self.goal_details_frame, text="Ukończ dzień", command=lambda: self.oznacz_dzien_ukonczony(idx), **self.button_style)
         oznacz_dzien_button.pack(side='left', fill='x', padx=5, pady=(10, 20))
 
         # Przycisk "Edytuj cel"
-        edit_button = Button(self.goal_details_frame, text="Edytuj cel", command=lambda: self.edit_goal(idx), **self.button_style)
+        edit_button = DepthButton(self.goal_details_frame, text="Edytuj cel", command=lambda: self.edit_goal(idx), **self.button_style)
         edit_button.pack(side='left', fill='x', padx=5, pady=(10, 20))
 
         # Przycisk "Usuń cel"
-        remove_button = Button(self.goal_details_frame, text="Usuń cel", command=lambda: self.remove_goal(idx), **self.button_style)
+        remove_button = DepthButton(self.goal_details_frame, text="Usuń cel", command=lambda: self.remove_goal(idx), **self.button_style)
         remove_button.pack(side='left', fill='x', padx=5, pady=(10, 20))
 
     def update_goal_days_listbox(self, goal_days, completed_days):
@@ -201,7 +224,7 @@ class MainMenu:
     def oznacz_dzien_ukonczony(self, idx):
         selected_indices = self.goal_days_listbox.curselection()
         selected_days = [int(self.goal_days_listbox.get(idx).split()[1]) for idx in selected_indices]
-        
+
         for day_number in selected_days:
             if day_number in self.goals[idx]['completed_days']:
                 self.goals[idx]['completed_days'].remove(day_number)
@@ -246,7 +269,7 @@ class MainMenu:
         new_days_entry.pack(fill='x', padx=10, pady=(0, 10))
         new_days_entry.insert(END, str(selected_goal['days']))
 
-        save_button = Button(edit_window, text="Zapisz zmiany", command=lambda: self.save_edited_goal(idx, new_name_entry.get(), new_days_entry.get()), **self.button_style)
+        save_button = DepthButton(edit_window, text="Zapisz zmiany", command=lambda: self.save_edited_goal(idx, new_name_entry.get(), new_days_entry.get()), **self.button_style)
         save_button.pack(pady=10)
 
     def save_edited_goal(self, idx, new_name, new_days):
