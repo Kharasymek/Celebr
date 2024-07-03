@@ -40,7 +40,7 @@ class MainMenu:
 
         # Logo aplikacji
         self.logo_image = Image.open("logo.png")
-        self.logo_image = self.logo_image.resize((150, 150), Image.BILINEAR)
+        self.logo_image = self.logo_image.resize((250, 250), Image.BILINEAR)
         self.logo_photo = ImageTk.PhotoImage(self.logo_image)
 
         # Logo na górze głównego okna
@@ -48,10 +48,10 @@ class MainMenu:
         self.logo_label.pack()
 
         # Nagłówek aplikacji
-        app_name_font = tkFont.Font(family="Avenir", size=36, weight="bold")
+        app_name_font = tkFont.Font(family="Avenir", size=50, weight="bold")
         self.app_name_label = Label(self.master, text="Celebr", font=app_name_font, background='#FFFFFF', fg='#1a3b4c')
         self.app_name_label.pack()
-
+        
         # Styl dla przycisków menu
         self.button_style = {
             'font': ('Avenir', 14),
@@ -102,7 +102,7 @@ class MainMenu:
         goals_frame = Frame(content_frame, background='#FFFFFF', width=300)
         goals_frame.pack(side='left', fill='y', padx=(0, 10), pady=10)
 
-        Label(goals_frame, text="Twoje cele:", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
+        Label(goals_frame, text="Twoje cele:", font=('Avenir', 18, 'bold'), background='#FFFFFF', fg='#1a3b4c').pack(pady=10)
 
         # Lista przewijana dla przycisków celów
         self.goal_listbox = Listbox(goals_frame, selectmode='single', background='#FFFFFF', exportselection=False)
@@ -113,15 +113,11 @@ class MainMenu:
         # Pobranie listy celów do wyświetlenia
         self.update_goals_list()
 
-        # Linia oddzielająca
-        separator = Frame(content_frame, width=2, background='#1a3b4c')
-        separator.pack(side='left', fill='y', padx=10)
-
         # Formularz dodawania celu po prawej stronie
         self.add_goal_frame = Frame(content_frame, background='#FFFFFF', highlightbackground='#1a3b4c', highlightthickness=2, padx=10, pady=10)
         self.add_goal_frame.pack(side='right', fill='both', expand=True, padx=20, pady=20)
 
-        Label(self.add_goal_frame, text="Dodaj nowy cel:", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
+        Label(self.add_goal_frame, text="Dodaj nowy cel:", font=('Avenir', 18, 'bold'), background='#FFFFFF', fg='#1a3b4c').pack(pady=10)
 
         Label(self.add_goal_frame, text="Nazwa celu:", background='#FFFFFF').pack(anchor='w', padx=10)
         self.goal_name_entry = Entry(self.add_goal_frame, font=('Avenir', 12), relief="solid", bd=2)
@@ -189,10 +185,15 @@ class MainMenu:
         goal_days = self.goals[idx]['days']
         completed_days = self.goals[idx]['completed_days']
 
+        # Usunięcie poprzedniej ramki z informacjami o celu, jeśli istnieje
+        if hasattr(self, 'goal_details_frame'):
+            self.goal_details_frame.destroy()
+
+        # Utworzenie nowej ramki z informacjami o celu
         self.goal_details_frame = Frame(self.add_goal_frame, background='#FFFFFF')
         self.goal_details_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
-        Label(self.goal_details_frame, text=f"Informacje o celu: {goal_name}", font=('Avenir', 18, 'bold'), background='#FFFFFF').pack(pady=10)
+        Label(self.goal_details_frame, text=f"Informacje o celu: {goal_name}", font=('Avenir', 18, 'bold'), background='#FFFFFF', fg='#1a3b4c').pack(pady=10)
 
         self.goal_days_listbox = Listbox(self.goal_details_frame, selectmode=MULTIPLE, background='#FFFFFF')
         self.goal_days_listbox.pack(fill='both', expand=True, padx=10, pady=10)

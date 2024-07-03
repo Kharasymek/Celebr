@@ -61,7 +61,11 @@
         "days": 12,
         "completed_days": [
             2,
-            4
+            4,
+            6,
+            8,
+            10,
+            12
         ],
         "completed": false
     },
@@ -74,7 +78,27 @@
             6,
             9,
             10,
-            12
+            12,
+            7
+        ],
+        "completed": false
+    },
+    {
+        "name": "ssa",
+        "days": 12,
+        "completed_days": [
+            3,
+            7,
+            12,
+            10,
+            4,
+            5,
+            1,
+            2,
+            6,
+            8,
+            9,
+            11
         ],
         "completed": false
     }
